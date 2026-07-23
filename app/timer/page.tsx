@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTimerStore } from '@/store/useTimerStore';
+import { useTimerStore, TimerPreset } from '@/store/useTimerStore';
 import { Button } from '@/components/Button';
 import { IconButton } from '@/components/IconButton';
 import { ProgressRing } from '@/components/ProgressRing';
-import { Maximize2, Minimize2, Play, Pause, RotateCcw } from 'lucide-react';
+import { EditPresetsModal } from '@/components/EditPresetsModal';
+import { Maximize2, Minimize2, Play, Pause, RotateCcw, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function TimerPage() {
@@ -15,7 +16,9 @@ export default function TimerPage() {
     timerCompleted,
     timerTimeLeft,
     timerDuration,
+    timerPresets,
     setTimerDuration,
+    setTimerPresets,
     startTimer,
     pauseTimer,
     resetTimer,
@@ -23,11 +26,12 @@ export default function TimerPage() {
     setFullscreenMode,
   } = useTimerStore();
 
-  // Local state for custom duration inputs
+  // Local state for custom duration inputs and presets modal
   const [hours, setHours] = useState('0');
   const [minutes, setMinutes] = useState('25');
   const [seconds, setSeconds] = useState('0');
   const [validationError, setValidationError] = useState('');
+  const [isEditPresetsOpen, setIsEditPresetsOpen] = useState(false);
 
   // Auto-sync local custom inputs if preset is clicked (and timer is not running)
   useEffect(() => {
@@ -45,12 +49,10 @@ export default function TimerPage() {
   }, [timerDuration, timerRunning, timerPaused, timerCompleted]);
 
   // Handle Preset Clicks
-  const handlePresetClick = (mins: number) => {
-    setTimerDuration(mins * 60);
+  const handlePresetClick = (durationInSecs: number) => {
+    setTimerDuration(durationInSecs);
     // Automatically start the timer on preset click for faster UX
-    setTimeout(() => {
-      startTimer();
-    }, 50);
+    startTimer();
   };
 
   // Handle custom input submission
@@ -74,9 +76,7 @@ export default function TimerPage() {
     }
 
     setTimerDuration(totalSeconds);
-    setTimeout(() => {
-      startTimer();
-    }, 50);
+    startTimer();
   };
 
   // Helper to format remaining time
@@ -98,7 +98,7 @@ export default function TimerPage() {
 
   return (
     <div className="flex-grow flex flex-col items-center justify-center py-4 select-none font-sans">
-      
+
       <AnimatePresence mode="wait">
         {/* Fullscreen Focus Mode */}
         {isFullscreen ? (
@@ -111,7 +111,7 @@ export default function TimerPage() {
             className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center px-6"
           >
             <div className="flex flex-col items-center justify-center space-y-12">
-              
+
               {/* Floating Live Digital Clock in top corner */}
               <div className="text-sm font-semibold tracking-wide text-text-muted select-none absolute top-8 font-mono">
                 {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
@@ -154,7 +154,7 @@ export default function TimerPage() {
             transition={{ duration: 0.15 }}
             className="w-full max-w-lg flex flex-col items-center"
           >
-            
+
             {/* Header Control Row */}
             <div className="w-full flex justify-end mb-8">
               <IconButton
@@ -189,7 +189,7 @@ export default function TimerPage() {
                     <Play className="w-4 h-4 mr-2" /> Start
                   </Button>
                 )}
-                
+
                 <Button variant="secondary" onClick={resetTimer} className="w-28" disabled={timerTimeLeft === timerDuration && !timerCompleted}>
                   <RotateCcw className="w-4 h-4 mr-2" /> Reset
                 </Button>
@@ -198,15 +198,27 @@ export default function TimerPage() {
 
             {/* Presets Grid */}
             <div className="bg-card border border-border-default rounded-2xl p-6 shadow-light-sm dark:shadow-none w-full mb-6">
-              <h3 className="text-sm font-semibold text-text-secondary mb-4">Presets</h3>
-              <div className="grid grid-cols-5 gap-2">
-                {[5, 10, 15, 25, 60].map((mins) => (
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-semibold text-text-secondary">Presets</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsEditPresetsOpen(true)}
+                  className="flex items-center space-x-1.5 text-xs text-primary hover:text-primary-hover font-semibold cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>Edit</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {timerPresets.map((preset) => (
                   <button
-                    key={mins}
-                    onClick={() => handlePresetClick(mins)}
-                    className="h-10 bg-bg-secondary hover:bg-card-hover border border-border-default/50 hover:border-border-strong text-text-primary text-xs font-semibold rounded-lg transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    key={preset.id}
+                    onClick={() => handlePresetClick(preset.duration)}
+                    className="h-10 bg-bg-secondary hover:bg-card-hover border border-border-default/50 hover:border-border-strong text-text-primary text-xs font-semibold rounded-lg transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary px-2 truncate"
+                    title={`${preset.name} (${Math.floor(preset.duration / 60)}m ${preset.duration % 60}s)`}
                   >
-                    {mins}m
+                    {preset.name}
                   </button>
                 ))}
               </div>
@@ -271,6 +283,14 @@ export default function TimerPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Edit Presets Modal */}
+      <EditPresetsModal
+        isOpen={isEditPresetsOpen}
+        onClose={() => setIsEditPresetsOpen(false)}
+        presets={timerPresets}
+        onSave={setTimerPresets}
+      />
 
     </div>
   );

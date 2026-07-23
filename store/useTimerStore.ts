@@ -1,10 +1,25 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { useSettingsStore } from './useSettingsStore';
-import { playSound } from '@/utils/audio';
+import { playSound, stopSound } from '@/utils/audio';
 import { showNotification } from '@/utils/notifications';
 import toast from 'react-hot-toast';
 
 export type PomodoroMode = 'focus' | 'shortBreak' | 'longBreak';
+
+export interface TimerPreset {
+  id: string;
+  name: string;
+  duration: number; // in seconds
+}
+
+export const DEFAULT_TIMER_PRESETS: TimerPreset[] = [
+  { id: 'preset-5m', name: '5m', duration: 300 },
+  { id: 'preset-10m', name: '10m', duration: 600 },
+  { id: 'preset-15m', name: '15m', duration: 900 },
+  { id: 'preset-25m', name: '25m', duration: 1500 },
+  { id: 'preset-1h', name: '1h', duration: 3600 },
+];
 
 interface TimerStore {
   // Global fullscreen state for each page
@@ -20,8 +35,10 @@ interface TimerStore {
   timerTimeLeft: number; // seconds remaining
   timerDuration: number; // total duration selected
   timerEndTime: number | null; // target timestamp (ms)
+  timerPresets: TimerPreset[];
 
   setTimerDuration: (seconds: number) => void;
+  setTimerPresets: (presets: TimerPreset[]) => void;
   startTimer: () => void;
   pauseTimer: () => void;
   resetTimer: () => void;
@@ -60,10 +77,12 @@ interface TimerStore {
   syncPomoDurations: () => void;
 }
 
-export const useTimerStore = create<TimerStore>((set, get) => ({
-  // Fullscreen State
-  fullscreenMode: null,
-  setFullscreenMode: (mode) => set({ fullscreenMode: mode }),
+export const useTimerStore = create<TimerStore>()(
+  persist(
+    (set, get) => ({
+      // Fullscreen State
+      fullscreenMode: null,
+      setFullscreenMode: (mode) => set({ fullscreenMode: mode }),
 
   // ----------------------------------------------------
   // Countdown Timer
@@ -74,8 +93,10 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   timerTimeLeft: 1500, // 25 min default
   timerDuration: 1500,
   timerEndTime: null,
+  timerPresets: DEFAULT_TIMER_PRESETS,
 
   setTimerDuration: (seconds) => {
+    stopSound();
     set({
       timerDuration: seconds,
       timerTimeLeft: seconds,
@@ -86,11 +107,16 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
     });
   },
 
+  setTimerPresets: (timerPresets) => {
+    set({ timerPresets });
+  },
+
   startTimer: () => {
+    stopSound();
     const { timerRunning, timerTimeLeft } = get();
     if (timerRunning || timerTimeLeft <= 0) return;
 
-    playSound('click');
+    playSound('button');
     const newEndTime = Date.now() + timerTimeLeft * 1000;
     set({
       timerRunning: true,
@@ -101,10 +127,11 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   },
 
   pauseTimer: () => {
+    stopSound();
     const { timerRunning, timerEndTime } = get();
     if (!timerRunning || !timerEndTime) return;
 
-    playSound('click');
+    playSound('button');
     const now = Date.now();
     const remaining = Math.max(0, Math.ceil((timerEndTime - now) / 1000));
     set({
@@ -116,7 +143,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   },
 
   resetTimer: () => {
-    playSound('click');
+    stopSound();
     const { timerDuration } = get();
     set({
       timerRunning: false,
@@ -169,7 +196,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
     const { stopwatchRunning } = get();
     if (stopwatchRunning) return;
 
-    playSound('click');
+    playSound('button');
     set({
       stopwatchRunning: true,
       stopwatchStartTime: Date.now(),
@@ -180,7 +207,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
     const { stopwatchRunning, stopwatchStartTime, stopwatchElapsedBeforePause } = get();
     if (!stopwatchRunning || !stopwatchStartTime) return;
 
-    playSound('click');
+    playSound('button');
     const elapsed = Date.now() - stopwatchStartTime;
     const totalTime = stopwatchElapsedBeforePause + elapsed;
     set({
@@ -192,7 +219,6 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   },
 
   resetStopwatch: () => {
-    playSound('click');
     set({
       stopwatchRunning: false,
       stopwatchTime: 0,
@@ -211,7 +237,6 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
     
     if (currentTotal === 0) return;
 
-    playSound('click');
     set((state) => ({
       stopwatchLaps: [currentTotal, ...state.stopwatchLaps],
     }));
@@ -237,10 +262,11 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   pomoEndTime: null,
 
   startPomodoro: () => {
+    stopSound();
     const { pomoRunning, pomoTimeLeft } = get();
     if (pomoRunning || pomoTimeLeft <= 0) return;
 
-    playSound('click');
+    playSound('button');
     const newEndTime = Date.now() + pomoTimeLeft * 1000;
     set({
       pomoRunning: true,
@@ -249,10 +275,11 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   },
 
   pausePomodoro: () => {
+    stopSound();
     const { pomoRunning, pomoEndTime } = get();
     if (!pomoRunning || !pomoEndTime) return;
 
-    playSound('click');
+    playSound('button');
     const now = Date.now();
     const remaining = Math.max(0, Math.ceil((pomoEndTime - now) / 1000));
     set({
@@ -263,7 +290,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   },
 
   resetPomodoro: () => {
-    playSound('click');
+    stopSound();
     const settings = useSettingsStore.getState().pomodoroSettings;
     const { pomoMode } = get();
     let seconds = settings.focusDuration * 60;
@@ -272,6 +299,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
 
     set({
       pomoRunning: false,
+      pomoSessionCount: 0,
       pomoTimeLeft: seconds,
       pomoDuration: seconds,
       pomoEndTime: null,
@@ -279,7 +307,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   },
 
   setPomoMode: (mode) => {
-    playSound('click');
+    stopSound();
     const settings = useSettingsStore.getState().pomodoroSettings;
     let seconds = settings.focusDuration * 60;
     if (mode === 'shortBreak') seconds = settings.shortBreakDuration * 60;
@@ -371,4 +399,13 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
       pomoDuration: seconds,
     });
   },
-}));
+}),
+{
+  name: 'timi-timer-storage',
+  partialize: (state) => ({
+    pomoSessionCount: state.pomoSessionCount,
+    timerPresets: state.timerPresets,
+  }),
+}
+)
+);

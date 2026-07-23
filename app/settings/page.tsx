@@ -4,7 +4,6 @@ import { useTheme } from 'next-themes';
 import { useSettingsStore, ThemeType, TimeFormatType } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
 import { requestNotificationPermission } from '@/utils/notifications';
-import { playSound } from '@/utils/audio';
 import { Sun, Moon, Monitor, Volume2, Bell, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useEffect, useState } from 'react';
@@ -49,14 +48,12 @@ export default function SettingsPage() {
     setTheme(newTheme);
     setNextTheme(newTheme);
     toast.success(`Theme set to ${newTheme}`);
-    playSound('click');
   };
 
   // Handle Time Format Change
   const handleTimeFormatChange = (format: TimeFormatType) => {
     setTimeFormat(format);
     toast.success(`Time format set to ${format === '12h' ? '12-hour' : '24-hour'}`);
-    playSound('click');
   };
 
   // Handle Notification Toggle
@@ -74,27 +71,17 @@ export default function SettingsPage() {
       setNotificationsEnabled(false);
       toast.success('Notifications disabled');
     }
-    playSound('click');
   };
 
   // Handle Sound Toggle
   const handleSoundToggle = (checked: boolean) => {
     setSoundEnabled(checked);
     toast.success(checked ? 'Alert sounds enabled' : 'Alert sounds muted');
-    if (checked) {
-      // Play a quick test sound
-      setTimeout(() => playSound('click'), 50);
-    }
   };
 
   // Handle Volume Change
   const handleVolumeChange = (volume: number) => {
     setSoundVolume(volume);
-    // Play sound tick to give volume feedback, throttled by user release
-  };
-
-  const handleVolumeChangeEnd = () => {
-    playSound('click');
   };
 
   // Handle Pomodoro Duration Input changes
@@ -114,7 +101,6 @@ export default function SettingsPage() {
   const handlePomoCheckboxChange = (key: 'autoStartBreak' | 'autoStartFocus', checked: boolean) => {
     setPomodoroSettings({ [key]: checked });
     toast.success(`${key === 'autoStartBreak' ? 'Auto-start breaks' : 'Auto-start focus'} updated`);
-    playSound('click');
   };
 
   return (
@@ -223,8 +209,6 @@ export default function SettingsPage() {
               max="100"
               value={Math.round(soundVolume * 100)}
               onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10) / 100)}
-              onMouseUp={handleVolumeChangeEnd}
-              onTouchEnd={handleVolumeChangeEnd}
               className="w-full h-1.5 bg-bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
             />
           </div>

@@ -26,6 +26,7 @@ export function showNotification(title: string, body?: string) {
       new Notification(title, {
         body,
         icon: '/assets/logo/logo-icon-light.svg',
+        silent: true,
       });
     } catch (err) {
       console.error('Failed to show notification:', err);
@@ -37,6 +38,7 @@ export function showNotification(title: string, body?: string) {
           new Notification(title, {
             body,
             icon: '/assets/logo/logo-icon-light.svg',
+            silent: true,
           });
         } catch (err) {
           console.error('Failed to show notification after permission grant:', err);
