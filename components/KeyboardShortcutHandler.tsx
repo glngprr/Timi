@@ -96,6 +96,11 @@ export function KeyboardShortcutHandler() {
       }
 
       // Page navigation shortcuts
+      if (key === 'c') {
+        event.preventDefault();
+        router.push('/clock');
+        return;
+      }
       if (key === 't') {
         event.preventDefault();
         router.push('/timer');

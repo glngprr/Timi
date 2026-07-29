@@ -512,6 +512,7 @@ Space : Start/Pause
 R : Reset
 F : Fullscreen
 Esc : Exit Fullscreen
+C : Clock
 T : Timer
 S : Stopwatch
 P : Pomodoro
