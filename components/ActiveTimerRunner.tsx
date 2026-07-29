@@ -99,11 +99,13 @@ export function ActiveTimerRunner() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (pathname === '/timer') {
+    if (pathname === '/clock') {
+      document.title = 'Timi - Clock';
+    } else if (pathname === '/timer') {
       if (timerRunning) {
         document.title = `${formatTimerTime(timerTimeLeft)} Timi Timer`;
       } else {
-        document.title = 'Timi';
+        document.title = 'Timi - Timer';
       }
     } else if (pathname === '/pomodoro') {
       if (pomoRunning) {
@@ -112,13 +114,13 @@ export function ActiveTimerRunner() {
         const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         document.title = `${timeStr} - Timi`;
       } else {
-        document.title = 'Timi';
+        document.title = 'Time to focus!';
       }
     } else if (pathname === '/stopwatch') {
       if (stopwatchRunning) {
         document.title = `[Running] Timi Stopwatch`;
       } else {
-        document.title = 'Timi';
+        document.title = 'Timi - Stopwatch';
       }
     } else {
       document.title = 'Timi';
